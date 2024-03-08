@@ -1,7 +1,21 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+import 'max_count_future.dart';
+
 void main() {
+  // test([45,56,3,47,999,45635,33,55,2,55,99,67]);
   runApp(const MyApp());
+}
+
+void test(List<int> list) {
+  int min = 1000000;
+  for (int i = 0; i < list.length; i++) {
+    if (min > list[i]) min = list[i];
+  }
+  print(min);
 }
 
 class MyApp extends StatelessWidget {
@@ -71,12 +85,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
@@ -106,21 +114,44 @@ class _MyHomePageState extends State<MyHomePage> {
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            TextButton(onPressed: () {
+              List<Map> dataList = List.generate(10, (index) {
+                return {"name":"$index号","age":"${index+20}","second":index%2 == 0?1:4};
+              });
+              AsyncCountFuture.waitBuilder(
+                itemCount: 10,
+                itemBuilder: (index) async {
+                  final item = dataList[index];
+                  if (index%2 == 0) {
+                    await asyncTask1(item["name"], item["age"], item["second"]);
+                  } else {
+                    await asyncTask2(item["name"], item["second"]);
+                  }
+                },
+                maxAsyncCount: 5,
+              ).then((value) {
+                print("执行完毕");
+              });
+            }, child: Text("最大并发测试")),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () {
+
+        },
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  asyncTask1(String name,String age,int second) async {
+    await Future.delayed(Duration(seconds: second));
+    print("task1 --- $name 年龄: $age");
+  }
+  asyncTask2(String name,int second) async {
+    await Future.delayed(Duration(seconds: second));
+    print("task2 --- $name 年龄未知");
   }
 }
